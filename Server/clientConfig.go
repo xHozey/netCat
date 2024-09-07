@@ -30,13 +30,14 @@ func nameClient(conn net.Conn) string {
 			fmt.Println(err)
 			continue
 		}
-		if name == "\n" || strings.Trim(name, " ") == "\n" {
+		name = strings.TrimSpace(name)
+
+		if name == "" {
 			conn.Write([]byte("Name cannot be empty. Please enter a valid name.\n"))
 			continue
 		}
 		break
 	}
-	name = strings.TrimSpace(name)
 	Mu.Lock()
 	Connections[name] = conn
 	conn.Write([]byte(LogData))
