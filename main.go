@@ -12,11 +12,11 @@ import (
 	"time"
 )
 
-var ConnectionsMax int
-
 var (
-	connections = make(map[string]net.Conn)
-	mu          sync.Mutex
+	ConnectionsMax int
+	connections    = make(map[string]net.Conn)
+	mu             sync.Mutex
+	logdata        string
 )
 
 func main() {
@@ -35,12 +35,11 @@ func main() {
 	}
 	fmt.Println("Listening on the port " + port)
 
-	go readFromTerminal()
-
 	for {
 		conn, err := listner.Accept()
 		if ConnectionsMax < 10 {
 			ConnectionsMax++
+			conn.Write([]byte(logdata))
 			go linuxMsg(conn)
 
 			if err != nil {
@@ -63,7 +62,6 @@ func handleConn(conn net.Conn, name string) {
 		mu.Lock()
 		delete(connections, name)
 		mu.Unlock()
-
 		conn.Close()
 	}()
 	for {
@@ -71,6 +69,7 @@ func handleConn(conn net.Conn, name string) {
 		if err != nil {
 			if err == io.EOF {
 				broadcastMessage(name + " has left our chat...\n")
+				fmt.Print(name + " has left our chat...\n")
 			} else {
 				fmt.Println(err)
 			}
@@ -105,6 +104,7 @@ func nameClient(conn net.Conn) string {
 	connections[name] = conn
 	mu.Unlock()
 	broadcastMessage(name + " has joined our chat...\n")
+	fmt.Print(name + " has joined our chat...\n")
 
 	return name
 }
@@ -116,7 +116,7 @@ func broadcastMessage(message string) {
 	for _, conn := range connections {
 		conn.Write([]byte(message))
 	}
-	fmt.Print(message)
+	logdata += message
 }
 
 func linuxMsg(conn net.Conn) {
@@ -146,19 +146,5 @@ func linuxMsg(conn net.Conn) {
 			fmt.Println("Error writing to connection:", err)
 			return
 		}
-	}
-}
-
-func readFromTerminal() {
-	scanner := bufio.NewScanner(os.Stdin)
-	for scanner.Scan() {
-		text := scanner.Text()
-		if strings.TrimSpace(text) == "" || strings.Contains(text, "/") || strings.ContainsRune(text, '\\') {
-			continue
-		}
-		broadcastMessage("Server: " + text + "\n")
-	}
-	if err := scanner.Err(); err != nil {
-		fmt.Println("Error reading from terminal:", err)
 	}
 }
