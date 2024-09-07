@@ -39,17 +39,16 @@ func main() {
 		conn, err := listner.Accept()
 		if ConnectionsMax < 10 {
 			ConnectionsMax++
-			conn.Write([]byte(logdata))
-			go linuxMsg(conn)
-
 			if err != nil {
 				fmt.Println(err)
 				continue
 			}
 			go func() {
+				linuxMsg(conn)
 				name := nameClient(conn)
 				handleConn(conn, name)
 			}()
+
 		} else {
 			conn.Write([]byte("chat group is full!"))
 			conn.Close()
@@ -64,6 +63,7 @@ func handleConn(conn net.Conn, name string) {
 		mu.Unlock()
 		conn.Close()
 	}()
+
 	for {
 		data, err := bufio.NewReader(conn).ReadString('\n')
 		if err != nil {
@@ -90,22 +90,29 @@ func handleConn(conn net.Conn, name string) {
 func nameClient(conn net.Conn) string {
 	name := ""
 	for {
-
-		name, _ = bufio.NewReader(conn).ReadString('\n')
-
+		var err error
+		name, err = bufio.NewReader(conn).ReadString('\n')
+		if err != nil {
+			if err == io.EOF {
+				conn.Write([]byte("Name cannot be empty. Please enter a valid name.\n"))
+				continue
+			}
+			fmt.Println(err)
+			continue
+		}
 		if name == "\n" || strings.Trim(name, " ") == "\n" {
 			conn.Write([]byte("Name cannot be empty. Please enter a valid name.\n"))
 			continue
 		}
 		break
 	}
-	name = name[:len(name)-1]
+	name = strings.TrimSpace(name)
 	mu.Lock()
 	connections[name] = conn
+	conn.Write([]byte(logdata))
 	mu.Unlock()
 	broadcastMessage(name + " has joined our chat...\n")
 	fmt.Print(name + " has joined our chat...\n")
-
 	return name
 }
 
