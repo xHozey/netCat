@@ -13,7 +13,7 @@ var ConnectionsMax = 0
 
 func HostServer() {
 	port := GetAdress()
-	listner, err := net.Listen("tcp", "localhost"+port)
+	listner, err := net.Listen("tcp", port)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -21,7 +21,7 @@ func HostServer() {
 
 	for {
 		conn, err := listner.Accept()
-		if ConnectionsMax < 10 {
+		if ConnectionsMax < 2 {
 			ConnectionsMax++
 			if err != nil {
 				fmt.Println(err)
@@ -44,6 +44,7 @@ func handleConn(conn net.Conn, name string) {
 	defer func() {
 		Mu.Lock()
 		delete(Connections, name)
+		delete(ConnectionsName, conn)
 		ConnectionsMax--
 		Mu.Unlock()
 		conn.Close()
@@ -52,12 +53,13 @@ func handleConn(conn net.Conn, name string) {
 	for {
 		currentTime := time.Now()
 		formattedTime := currentTime.Format("2006-01-02 15:04:05")
-		user := "[" + formattedTime + "]" + "[" + name + "]:"
-		conn.Write([]byte(user))
+		user := "\n[" + formattedTime + "]" + "[" + name + "]:"
+
 		data, err := bufio.NewReader(conn).ReadString('\n')
 		if err != nil {
 			if err == io.EOF {
-				broadcastMessage(name+" has left our chat...", nil)
+				broadcastMessage("\n"+name+" has left our chat...\n", nil)
+				conn.Write([]byte(user))
 				fmt.Print(name + " has left our chat...")
 			} else {
 				fmt.Println(err)
@@ -68,6 +70,8 @@ func handleConn(conn net.Conn, name string) {
 		data = cleanStr(data)
 		if data != "" {
 			go broadcastMessage(user+data+"\n", conn)
+		} else {
+			conn.Write([]byte("[" + formattedTime + "]" + "[" + name + "]:"))
 		}
 
 	}
