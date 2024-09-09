@@ -3,6 +3,7 @@ package netCat
 import (
 	"fmt"
 	"os"
+	"strings"
 )
 
 func GetAdress() string {
@@ -15,4 +16,13 @@ func GetAdress() string {
 		port = ":" + os.Args[1]
 	}
 	return port
+}
+
+func cleanStr(s string) string {
+	s = strings.TrimSpace(s)
+	s = strings.ReplaceAll(s, "\x1b[A", "")
+	s = strings.ReplaceAll(s, "\x1b[B", "")
+	s = strings.ReplaceAll(s, "\x1b[C", "")
+	s = strings.ReplaceAll(s, "\x1b[D", "")
+	return s
 }

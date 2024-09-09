@@ -6,13 +6,13 @@ import (
 	"io"
 	"log"
 	"net"
-	"strings"
 	"time"
 )
 
+var ConnectionsMax = 0
+
 func HostServer() {
 	port := GetAdress()
-	ConnectionsMax := 0
 	listner, err := net.Listen("tcp", "localhost"+port)
 	if err != nil {
 		log.Fatal(err)
@@ -44,29 +44,30 @@ func handleConn(conn net.Conn, name string) {
 	defer func() {
 		Mu.Lock()
 		delete(Connections, name)
+		ConnectionsMax--
 		Mu.Unlock()
 		conn.Close()
 	}()
 
 	for {
+		currentTime := time.Now()
+		formattedTime := currentTime.Format("2006-01-02 15:04:05")
+		user := "[" + formattedTime + "]" + "[" + name + "]:"
+		conn.Write([]byte(user))
 		data, err := bufio.NewReader(conn).ReadString('\n')
 		if err != nil {
 			if err == io.EOF {
-				broadcastMessage(name + " has left our chat...\n")
-				fmt.Print(name + " has left our chat...\n")
+				broadcastMessage(name+" has left our chat...", nil)
+				fmt.Print(name + " has left our chat...")
 			} else {
 				fmt.Println(err)
 			}
 			break
 		}
 
-		currentTime := time.Now()
-		formattedTime := currentTime.Format("2006-01-02 15:04:05")
-		user := "[" + formattedTime + "]" + "[" + name + "]:"
-		if strings.TrimSpace(data) != "" {
-			go broadcastMessage(user + data)
-		} else {
-			conn.Write([]byte(user + ""))
+		data = cleanStr(data)
+		if data != "" {
+			go broadcastMessage(user+data+"\n", conn)
 		}
 
 	}
