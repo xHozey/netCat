@@ -60,7 +60,7 @@ func handleConn(conn net.Conn, name string) {
 			if err == io.EOF {
 				broadcastMessage("\n"+name+" has left our chat...\n", nil)
 				conn.Write([]byte(user))
-				fmt.Print(name + " has left our chat...")
+				fmt.Println(name + " has left our chat...")
 			} else {
 				fmt.Println(err)
 			}
