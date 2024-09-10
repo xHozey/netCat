@@ -20,9 +20,13 @@ func GetAdress() string {
 
 func cleanStr(s string) string {
 	s = strings.TrimSpace(s)
-	s = strings.ReplaceAll(s, "\x1b[A", "")
-	s = strings.ReplaceAll(s, "\x1b[B", "")
-	s = strings.ReplaceAll(s, "\x1b[C", "")
-	s = strings.ReplaceAll(s, "\x1b[D", "")
-	return s
+	result := ""
+	for _, val := range s {
+		if val >= 0 && val < 32 {
+			continue
+		}
+		result += string(val)
+	}
+
+	return result
 }

@@ -21,7 +21,7 @@ func HostServer() {
 
 	for {
 		conn, err := listner.Accept()
-		if ConnectionsMax < 2 {
+		if ConnectionsMax < 10 {
 			ConnectionsMax++
 			if err != nil {
 				fmt.Println(err)
