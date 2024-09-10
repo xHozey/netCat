@@ -12,11 +12,10 @@ import (
 )
 
 var (
-	Connections     = make(map[string]net.Conn)
-	ConnectionsName = make(map[net.Conn]string)
-	Mu              sync.Mutex
-	LogData         string
-	alreadyExists   bool
+	Connections   = make(map[string]net.Conn)
+	Mu            sync.Mutex
+	LogData       string
+	alreadyExists bool
 )
 
 func nameClient(conn net.Conn) string {
@@ -39,7 +38,7 @@ func nameClient(conn net.Conn) string {
 			conn.Write([]byte("Name cannot be empty. Please enter a valid name.\n[ENTER YOUR NAME]: "))
 			continue
 		}
-		for _, cnx := range ConnectionsName {
+		for cnx := range Connections {
 			if name == cnx {
 				alreadyExists = true
 				break
@@ -54,7 +53,6 @@ func nameClient(conn net.Conn) string {
 	}
 	Mu.Lock()
 	Connections[name] = conn
-	ConnectionsName[conn] = name
 	conn.Write([]byte(LogData))
 	Mu.Unlock()
 	broadcastMessage("\n"+name+" has joined our chat...\n", nil)
@@ -66,15 +64,15 @@ func broadcastMessage(message string, sender net.Conn) {
 	Mu.Lock()
 	defer Mu.Unlock()
 
-	for _, conn := range Connections {
+	for name, conn := range Connections {
 		currentTime := time.Now()
 		formattedTime := currentTime.Format("2006-01-02 15:04:05")
 		if conn != sender {
-			user := "[" + formattedTime + "]" + "[" + ConnectionsName[conn] + "]:"
+			user := "[" + formattedTime + "]" + "[" + name + "]:"
 			conn.Write([]byte(message))
 			conn.Write([]byte(user))
 		} else {
-			conn.Write([]byte("[" + formattedTime + "]" + "[" + ConnectionsName[sender] + "]:"))
+			conn.Write([]byte("[" + formattedTime + "]" + "[" + name + "]:"))
 		}
 	}
 	LogData += message

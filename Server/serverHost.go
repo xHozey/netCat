@@ -21,12 +21,12 @@ func HostServer() {
 
 	for {
 		conn, err := listner.Accept()
+		if err != nil {
+			fmt.Println(err)
+			continue
+		}
 		if ConnectionsMax < 10 {
 			ConnectionsMax++
-			if err != nil {
-				fmt.Println(err)
-				continue
-			}
 			go func() {
 				LinuxMsg(conn)
 				name := nameClient(conn)
@@ -44,7 +44,6 @@ func handleConn(conn net.Conn, name string) {
 	defer func() {
 		Mu.Lock()
 		delete(Connections, name)
-		delete(ConnectionsName, conn)
 		ConnectionsMax--
 		Mu.Unlock()
 		conn.Close()
@@ -59,7 +58,6 @@ func handleConn(conn net.Conn, name string) {
 		if err != nil {
 			if err == io.EOF {
 				broadcastMessage("\n"+name+" has left our chat...\n", nil)
-				conn.Write([]byte(user))
 				fmt.Println(name + " has left our chat...")
 			} else {
 				fmt.Println(err)
